@@ -1,26 +1,25 @@
 import Product from "../../../models/Product";
 import dbConnect from "../../../../util/dbConnect";
-import { NextResponse } from "next/server";
 
 export async function GET() {
+  await dbConnect();
   try {
-    await dbConnect();
-    const products = await Product.find({});
-    return NextResponse.json(products, { status: 200 });
+    const products = await Product.find();
+    return Response.json(products, { status: 200 });
   } catch (err) {
     console.log(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return Response.json({ message: "Hata" }, { status: 500 });
   }
 }
 
 export async function POST(req) {
+  await dbConnect();
   try {
-    await dbConnect();
     const body = await req.json();
     const newProduct = await Product.create(body);
-    return NextResponse.json(newProduct, { status: 201 });
+    return Response.json(newProduct, { status: 201 });
   } catch (err) {
     console.log(err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return Response.json({ message: "Hata" }, { status: 500 });
   }
 }
