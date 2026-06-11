@@ -1,7 +1,6 @@
 import React from "react";
-import MenuWrapper from "@/components/product/MenuWrapper";
+import MenuWrapper from "../components/product/MenuWrapper";
 
-// 1. Veriyi çekmek için bu async fonksiyonu kullanıyoruz (Server Component)
 async function getMenuData() {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://duria-menu.vercel.app";
 
