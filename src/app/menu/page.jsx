@@ -2,35 +2,32 @@ import React from "react";
 
 import MenuWrapper from "../components/product/MenuWrapper";
 
-
 export const dynamic = "force-dynamic";
 
 async function getMenuData() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://duria-menu.vercel.app";
+ 
+  const baseUrl = "https://duria-menu.vercel.app";
 
   try {
+   
     const [resCat, resProd] = await Promise.all([
       fetch(`${baseUrl}/api/categories`, { cache: 'no-store' }),
       fetch(`${baseUrl}/api/products`, { cache: 'no-store' })
     ]);
 
-    // API yanıt vermezse boş dizi dönerek uygulamanın çökmesini engelleriz
-    if (!resCat.ok || !resProd.ok) {
-      console.error("API verisi alınamadı");
-      return { categoryList: [], productList: [] };
-    }
+    if (!resCat.ok || !resProd.ok) throw new Error("API yanıt vermedi");
 
-    const categoryList = await resCat.json();
-    const productList = await resProd.json();
-
-    return { categoryList, productList };
+    return { 
+      categoryList: await resCat.json(), 
+      productList: await resProd.json() 
+    };
   } catch (err) {
-    console.error("Veri çekme hatası:", err);
+    console.error("HATA:", err);
     return { categoryList: [], productList: [] };
   }
 }
 
-const Index = async () => {
+export default async function Index() {
   const { categoryList, productList } = await getMenuData();
 
   return (
@@ -38,6 +35,4 @@ const Index = async () => {
       <MenuWrapper categoryList={categoryList} productList={productList} />
     </div>
   );
-};
-
-export default Index;
+}
