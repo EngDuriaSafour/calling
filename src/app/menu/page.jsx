@@ -1,33 +1,22 @@
 import React from "react";
-import MenuWrapper from "../components/product/MenuWrapper";
+import MenuWrapper from "@/components/product/MenuWrapper";
 
-
-export const dynamic = "force-dynamic";
-
+// 1. Veriyi çekmek için bu async fonksiyonu kullanıyoruz (Server Component)
 async function getMenuData() {
-  
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://duria-menu.vercel.app";
 
-  try {
-    
-    const [resCat, resProd] = await Promise.all([
-      fetch(`${baseUrl}/api/categories`, { cache: 'no-store' }),
-      fetch(`${baseUrl}/api/products`, { cache: 'no-store' }) 
-    ]);
+ 
+  const [resCat, resProd] = await Promise.all([
+    fetch(`${baseUrl}/api/categories`, { cache: 'no-store' }),
+    fetch(`${baseUrl}/api/products`, { cache: 'no-store' })
+  ]);
 
-    if (!resCat.ok || !resProd.ok) {
-      throw new Error("API yanıt vermedi");
-    }
+  const categoryList = await resCat.json();
+  const productList = await resProd.json();
 
-    const categoryList = await resCat.json();
-    const productList = await resProd.json();
-
-    return { categoryList, productList };
-  } catch (err) {
-    console.error("Veri çekme hatası:", err);
-    return { categoryList: [], productList: [] };
-  }
+  return { categoryList, productList };
 }
+
 
 const Index = async () => {
   const { categoryList, productList } = await getMenuData();
