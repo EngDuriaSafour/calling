@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+"use client";
+import React, { useState } from "react";
 import OutsideClickHandler from "react-outside-click-handler";
 import Title from "../components/ui/Title";
 import { GiCancel } from "react-icons/gi";
@@ -6,119 +7,84 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const AddProduct = ({ setIsProductModal }) => {
-  const [file, setFile] = useState();
-  const [imageSrc, setImageSrc] = useState();
-
+  const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [category, setCategory] = useState("pizza");
-  const [prices, setPrices] = useState([]);
+  const [prices, setPrices] = useState([0, 0, 0]);
 
-  const [extra, setExtra] = useState("");
-  const [extraOptions, setExtraOptions] = useState([]);
-
-  const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    const getCategories = async () => {
-      try {
-        
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`);
-        setCategories(res.data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    getCategories();
-  }, []);
-
-  const handleExtra = (e) => {
-    if (extra) {
-      if (extra.text && extra.price) {
-        setExtraOptions((prev) => [...prev, extra]);
-      }
-    }
-  };
-
-  const handleOnChange = (changeEvent) => {
-    const reader = new FileReader();
-    reader.onload = function (onLoadEvent) {
-      setImageSrc(onLoadEvent.target.result);
-      setFile(changeEvent.target.files[0]);
-    };
-    reader.readAsDataURL(changeEvent.target.files[0]);
-  };
-
-  const changePrice = (e, index) => {
-    const currentPrices = [...prices];
-    currentPrices[index] = e.target.value;
-    setPrices(currentPrices);
-  };
+  const handleOnChange = (e) => setFile(e.target.files[0]);
 
   const handleCreate = async () => {
+    if (!file) return toast.error("Lütfen bir resim seçin!");
+    if (!title || !desc) return toast.error("Tüm alanları doldurun!");
+
     const data = new FormData();
     data.append("file", file);
     data.append("upload_preset", "food-ordering");
 
     try {
+      // 1. Cloudinary'ye resmi yükle
       const uploadRes = await axios.post(
         "https://api.cloudinary.com/v1_1/bilgisayar-genetigi/image/upload",
         data
       );
 
-      const { url } = uploadRes.data;
+      // 2. Ürün nesnesini hazırla
       const newProduct = {
-        img: url,
+        img: uploadRes.data.url,
         title,
         desc,
         category: category.toLowerCase(),
         prices,
-        extraOptions,
+        extraOptions: [],
       };
 
+      // 3. Veritabanına kaydet (Doğrudan /api/products kullanıyoruz)
+      await axios.post("/api/products", newProduct);
       
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, newProduct);
-
-      if (res.status === 201) {
-        setIsProductModal(false);
-        toast.success("Product created successfully!");
-      }
+      toast.success("Ürün başarıyla eklendi!");
+      setIsProductModal(false);
     } catch (err) {
-      console.log(err);
-      toast.error("Product creation failed!");
+      console.error(err);
+      toast.error("Ürün eklenirken bir hata oluştu!");
     }
   };
 
   return (
-    <div className="fixed top-0 left-0 w-screen h-screen z-50 after:content-[''] after:w-screen after:h-screen after:bg-white after:absolute after:top-0 after:left-0 after:opacity-60 grid place-content-center">
+    <div className="fixed inset-0 z-50 grid place-content-center bg-black/60">
       <OutsideClickHandler onOutsideClick={() => setIsProductModal(false)}>
-        <div className="w-full h-full grid place-content-center relative">
-          <div className="relative z-50 md:w-[600px] w-[370px] bg-white border-2 p-10 rounded-3xl">
-            <Title addClass="text-[40px] text-center">Add a New Product</Title>
-
-            <div className="flex flex-col text-sm mt-6">
-              <label className="flex gap-2 items-center">
-                <input type="file" onChange={handleOnChange} className="hidden" />
-                <button className="btn-primary !rounded-none !bg-blue-600 pointer-events-none">Choose an Image</button>
-                {imageSrc && (
-                  <img src={imageSrc} alt="" className="w-12 h-12 rounded-full" />
-                )}
-              </label>
-            </div>
-            
-           
-            <div className="flex flex-col text-sm mt-4">
-              <span className="font-semibold mb-[2px]">Title</span>
-              <input type="text" className="border-2 p-1 text-sm px-1 outline-none" onChange={(e) => setTitle(e.target.value)} />
-            </div>
-
+        <div className="relative w-[400px] bg-white border p-10 rounded-3xl">
+          <Title addClass="text-center text-2xl">Yeni Ürün Ekle</Title>
           
-
-            <button className="btn-primary !bg-success" onClick={handleCreate}>Create</button>
-            <button className="absolute top-4 right-4" onClick={() => setIsProductModal(false)}>
-              <GiCancel size={25} />
-            </button>
+          <div className="flex flex-col gap-y-3 mt-4">
+            <input type="file" onChange={handleOnChange} />
+            <input 
+              type="text" 
+              placeholder="Ürün Başlığı" 
+              className="border p-2 w-full" 
+              onChange={(e) => setTitle(e.target.value)} 
+            />
+            <textarea 
+              placeholder="Ürün Açıklaması" 
+              className="border p-2 w-full" 
+              onChange={(e) => setDesc(e.target.value)} 
+            />
           </div>
+
+          <button 
+            className="bg-green-600 text-white w-full mt-6 p-2 rounded-lg font-bold" 
+            onClick={handleCreate}
+          >
+            Kaydet
+          </button>
+
+          <button 
+            className="absolute top-4 right-4 text-red-500" 
+            onClick={() => setIsProductModal(false)}
+          >
+            <GiCancel size={25} />
+          </button>
         </div>
       </OutsideClickHandler>
     </div>
