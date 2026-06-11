@@ -6,55 +6,50 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const AddProduct = ({ setIsProductModal }) => {
-  const [file, setFile] = useState();
-  const [imageSrc, setImageSrc] = useState();
-
+  const [file, setFile] = useState(null);
+  const [imageSrc, setImageSrc] = useState(null);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [category, setCategory] = useState("pizza");
-  const [prices, setPrices] = useState([]);
-
-  const [extra, setExtra] = useState("");
+  const [prices, setPrices] = useState([0, 0, 0]);
+  const [extra, setExtra] = useState({ text: "", price: "" });
   const [extraOptions, setExtraOptions] = useState([]);
-
   const [categories, setCategories] = useState([]);
 
-  // Kategori listesini çekiyoruz
+  // Ortam değişkenini güvenli bir şekilde al
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
   useEffect(() => {
-    const getProducts = async () => {
+    const getCategories = async () => {
       try {
-        const currentOrigin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-        const res = await axios.get(`${currentOrigin}/api/categories`);
+        const res = await axios.get(`${baseUrl}/api/categories`);
         setCategories(res.data);
       } catch (err) {
-        console.log(err);
+        console.error("Kategori yüklenemedi:", err);
       }
     };
-    getProducts();
-  }, []);
+    getCategories();
+  }, [baseUrl]);
 
-  const handleExtra = (e) => {
-    if (extra) {
-      if (extra.text && extra.price) {
-        setExtraOptions((prev) => [...prev, extra]);
-        // Inputları temizlemek için resetleyelim
-        setExtra({ text: "", price: "" }); 
-      }
+  const handleExtra = () => {
+    if (extra.text && extra.price) {
+      setExtraOptions((prev) => [...prev, extra]);
+      setExtra({ text: "", price: "" });
     }
   };
 
-  const handleOnChange = (changeEvent) => {
-    const reader = new FileReader();
-
-    reader.onload = function (onLoadEvent) {
-      setImageSrc(onLoadEvent.target.result);
-      setFile(changeEvent.target.files[0]);
-    };
-
-    reader.readAsDataURL(changeEvent.target.files[0]);
+  const handleOnChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (onLoadEvent) => {
+        setImageSrc(onLoadEvent.target.result);
+        setFile(file);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  
   const changePrice = (e, index) => {
     const currentPrices = [...prices];
     currentPrices[index] = Number(e.target.value);
@@ -63,16 +58,15 @@ const AddProduct = ({ setIsProductModal }) => {
 
   const handleCreate = async () => {
     if (!file) {
-      toast.error("Please choose an image!");
+      toast.error("Lütfen bir resim seçin!");
       return;
     }
 
     const data = new FormData();
     data.append("file", file);
-    data.append("upload_preset", "duria-menu"); 
+    data.append("upload_preset", "duria-menu");
 
     try {
-      
       const uploadRes = await axios.post(
         "https://api.cloudinary.com/v1_1/dj0kuqx3b/image/upload",
         data
@@ -88,20 +82,13 @@ const AddProduct = ({ setIsProductModal }) => {
         extraOptions,
       };
 
-     
-      const currentOrigin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-      const res = await axios.post(
-        `${currentOrigin}/api/Products`,
-        newProduct
-      );
+      await axios.post(`${baseUrl}/api/products`, newProduct);
 
-      if (res.status === 201 || res.status === 200) {
-        setIsProductModal(false);
-        toast.success("Product created successfully!");
-      }
+      setIsProductModal(false);
+      toast.success("Ürün başarıyla eklendi!");
     } catch (err) {
-      console.log(err);
-      toast.error("Something went wrong!");
+      console.error(err);
+      toast.error("Ürün eklenirken bir hata oluştu!");
     }
   };
 
@@ -114,158 +101,50 @@ const AddProduct = ({ setIsProductModal }) => {
 
             <div className="flex flex-col text-sm mt-6">
               <label className="flex gap-2 items-center cursor-pointer">
-                <input
-                  type="file"
-                  onChange={handleOnChange}
-                  className="hidden"
-                />
+                <input type="file" onChange={handleOnChange} className="hidden" />
                 <button className="btn-primary !rounded-none !bg-blue-600 pointer-events-none">
                   Choose an Image
                 </button>
                 {imageSrc && (
-                  <div>
-                    
-                    <img
-                      src={imageSrc}
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  </div>
+                  <img src={imageSrc} alt="preview" className="w-12 h-12 rounded-full object-cover" />
                 )}
               </label>
             </div>
             
             <div className="flex flex-col text-sm mt-4">
               <span className="font-semibold mb-[2px]">Title</span>
-              <input
-                type="text"
-                className="border-2 p-1 text-sm px-1 outline-none"
-                placeholder="Write a title..."
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex flex-col text-sm mt-4">
-              <span className="font-semibold mb-[2px]">Description</span>
-              <textarea
-                className="border-2 p-1 text-sm px-1 outline-none"
-                placeholder="Write a description..."
-                onChange={(e) => setDesc(e.target.value)}
-              />
+              <input type="text" className="border-2 p-1 text-sm px-1 outline-none" onChange={(e) => setTitle(e.target.value)} />
             </div>
 
             <div className="flex flex-col text-sm mt-4">
-              <span className="font-semibold mb-[2px]">Select Category</span>
-              <select
-                className="border-2 p-1 text-sm px-1 outline-none"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {categories.length > 0 &&
-                  categories.map((cat) => (
-                    <option
-                      value={cat.title.toLowerCase().trim()}
-                      key={cat._id}
-                    >
-                      {cat.title}
-                    </option>
-                  ))}
+              <span className="font-semibold mb-[2px]">Description</span>
+              <textarea className="border-2 p-1 text-sm px-1 outline-none" onChange={(e) => setDesc(e.target.value)} />
+            </div>
+
+            <div className="flex flex-col text-sm mt-4">
+              <span className="font-semibold mb-[2px]">Category</span>
+              <select className="border-2 p-1 text-sm px-1 outline-none" onChange={(e) => setCategory(e.target.value)}>
+                {categories.map((cat) => (
+                  <option value={cat.title.toLowerCase().trim()} key={cat._id}>{cat.title}</option>
+                ))}
               </select>
             </div>
 
             <div className="flex flex-col text-sm mt-4 w-full">
               <span className="font-semibold mb-[2px]">Prices</span>
-              {category === "pizza" ? (
-                <div className="flex justify-between gap-6 w-full md:flex-nowrap flex-wrap">
-                  <input
-                    type="number"
-                    className="border-b-2 p-1 pl-0 text-sm px-1 outline-none w-36"
-                    placeholder="small"
-                    onChange={(e) => changePrice(e, 0)}
-                  />
-                  <input
-                    type="number"
-                    className="border-b-2 p-1 pl-0 text-sm px-1 outline-none w-36"
-                    placeholder="medium"
-                    onChange={(e) => changePrice(e, 1)}
-                  />
-                  <input
-                    type="number"
-                    className="border-b-2 p-1 pl-0 text-sm px-1 outline-none w-36"
-                    placeholder="large"
-                    onChange={(e) => changePrice(e, 2)}
-                  />
-                </div>
-              ) : (
-                <div className="flex justify-between gap-6 w-full md:flex-nowrap flex-wrap">
-                  <input
-                    type="number"
-                    className="border-b-2 p-1 pl-0 text-sm px-1 outline-none w-36"
-                    placeholder="small"
-                    onChange={(e) => changePrice(e, 0)}
-                  />
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-col text-sm mt-4 w-full">
-              <span className="font-semibold mb-[2px]">Extra</span>
-              <div className="flex gap-6 w-full md:flex-nowrap flex-wrap">
-                <input
-                  type="text"
-                  className="border-b-2 p-1 pl-0 text-sm px-1 outline-none w-36"
-                  placeholder="item"
-                  name="text"
-                  value={extra.text || ""}
-                  onChange={(e) =>
-                    setExtra({ ...extra, [e.target.name]: e.target.value })
-                  }
-                />
-                <input
-                  type="number"
-                  className="border-b-2 p-1 pl-0 text-sm px-1 outline-none w-36"
-                  placeholder="price"
-                  name="price"
-                  value={extra.price || ""}
-                  onChange={(e) =>
-                    setExtra({ ...extra, [e.target.name]: Number(e.target.value) })
-                  }
-                />
-                <button className="btn-primary ml-auto" onClick={handleExtra}>
-                  Add
-                </button>
-              </div>
-              <div className="mt-2 flex gap-2 flex-wrap">
-                {extraOptions.map((item, index) => (
-                  <span
-                    className="inline-block border border-orange-500 text-orange-500 p-1 rounded-xl text-xs cursor-pointer"
-                    key={index}
-                    onClick={() => {
-                      setExtraOptions(
-                        extraOptions.filter((_, i) => i !== index)
-                      );
-                    }}
-                  >
-                    {item.text} (+{item.price}₺)
-                  </span>
-                ))}
+              <div className="flex justify-between gap-6 w-full flex-wrap">
+                <input type="number" className="border-b-2 p-1 text-sm outline-none w-20" placeholder="Small" onChange={(e) => changePrice(e, 0)} />
+                <input type="number" className="border-b-2 p-1 text-sm outline-none w-20" placeholder="Medium" onChange={(e) => changePrice(e, 1)} />
+                <input type="number" className="border-b-2 p-1 text-sm outline-none w-20" placeholder="Large" onChange={(e) => changePrice(e, 2)} />
               </div>
             </div>
-            
-            <div className="flex justify-end mt-4">
-              <button
-                className="btn-primary !bg-success"
-                onClick={handleCreate}
-              >
-                Create
-              </button>
+
+            <div className="flex justify-end mt-6">
+              <button className="btn-primary !bg-success" onClick={handleCreate}>Create</button>
             </div>
-            
-            <button
-              className="absolute top-4 right-4"
-              onClick={() => setIsProductModal(false)}
-            >
-              <GiCancel size={25} className="transition-all" />
+
+            <button className="absolute top-4 right-4" onClick={() => setIsProductModal(false)}>
+              <GiCancel size={25} />
             </button>
           </div>
         </div>

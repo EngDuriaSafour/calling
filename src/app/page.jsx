@@ -5,24 +5,31 @@ export default async function Index() {
   let categoryList = [];
   let productList = [];
 
-  const currentOrigin = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+  const currentOrigin = process.env.NEXT_PUBLIC_API_URL;
 
-  try {
-    const res = await axios.get(`${currentOrigin}/categories`);
-    categoryList = res.data ? res.data : [];
-  } catch (err) {
-    console.log(err);
-  }
+  if (!currentOrigin) {
+    console.error("HATA: NEXT_PUBLIC_API_URL değişkeni tanımlı değil!");
+  } else {
+    try {
+      
+      const res = await axios.get(`${currentOrigin}/api/categories`);
+      categoryList = res.data ? res.data : [];
+    } catch (err) {
+      console.error("Kategori hatası:", err.message);
+    }
 
-  try {
-    const res = await axios.get(`${currentOrigin}/products`);
-    productList = res.data ? res.data : [];
-  } catch (err) {
-    console.log(err);
+    try {
+     
+      const res = await axios.get(`${currentOrigin}/api/products`);
+      productList = res.data ? res.data : [];
+    } catch (err) {
+      console.error("Ürün hatası:", err.message);
+    }
   }
 
   return (
     <div>
+      
       <Home categoryList={categoryList} productList={productList} />
     </div>
   );
