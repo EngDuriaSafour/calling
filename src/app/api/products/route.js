@@ -8,6 +8,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
+  console.log("API rotasına istek ulaştı!");
   await dbConnect();
   try {
     const body = await req.json();
