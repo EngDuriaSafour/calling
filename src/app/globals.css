@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ffbe33;
+  --color-secondary: #222831;
+
+  
+  --font-dancing: var(--font-dancing);
+  --font-sans: var(--font-open-sans);
+}
+
+
+body {
+  @apply bg-white text-secondary font-sans;
+}
+
+
+.btn-primary {
+  @apply text-white px-[30px] py-[8px] rounded-3xl bg-primary cursor-pointer hover:opacity-70 transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+}
+.slick-dots {
+  @apply !flex justify-start w-full;
+}
+
+.slick-dots .slick-active div {
+  @apply bg-primary;
+}
+
+.slick-dots div {
+  @apply !m-0 !mt-8;
+}
