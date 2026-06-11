@@ -2,15 +2,20 @@ import React from "react";
 import MenuWrapper from "../components/product/MenuWrapper";
 
 
-async function getMenuData() {
+export const dynamic = "force-dynamic";
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://calling.vercel.app/api";
+async function getMenuData() {
+ 
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://calling.vercel.app";
 
   try {
+   
     const [resCat, resProd] = await Promise.all([
-      fetch(`${baseUrl}/categories`, { cache: 'no-store' }),
-      fetch(`${baseUrl}/Products`, { cache: 'no-store' })
+      fetch(`${baseUrl}/api/categories`, { cache: 'no-store' }),
+      fetch(`${baseUrl}/api/Products`, { cache: 'no-store' })
     ]);
+
+    if (!resCat.ok || !resProd.ok) throw new Error("API yanıt vermedi");
 
     const categoryList = await resCat.json();
     const productList = await resProd.json();
